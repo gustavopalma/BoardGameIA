@@ -1,12 +1,12 @@
 unit uLigue4;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+} {$R+}{$Q+}
 
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, ExtCtrls, Types,
-  math;
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, ExtCtrls,
+  StdCtrls, Types, math;
 
 
 const MAX_LINHA = 5;
@@ -18,35 +18,45 @@ const PECA_AMARELA = 1;
 
 
 type
-  TEstado = (eMovimento,eAvaliar,eEsperar);
+  TEstado = (eMovimento, eAvaliar, eEsperar, eAtualizar, eAvaliaMovimento);
 type
   TTabuleiro = Array[0..MAX_LINHA,0..MAX_COLUNA] of Integer;
   PWidthArray = ^TTabuleiro;
   TLinha = Array of Integer;
+type TMinMax = record
+   coluna : Integer;
+   pontuacao: Integer;
+end;
+type PInteger = ^Integer;
 
+type
+TMethodPtr = procedure of object;
 
   function pegalinha(tabuleiro : TTabuleiro; linha: Integer) : TLinha;
   function pegaColuna(tabuleiro: TTabuleiro; coluna: Integer): TLinha;
   function contaValores(vetor : TLinha; valor : Integer) : Integer;
   function pegaDiagonal(tabuleiro: TTabuleiro; linha, coluna,tamanho : Integer) : TLinha;
+  function pegaDiagonal2(tabuleiro: TTabuleiro; linha, coluna,tamanho : Integer) : TLinha;
   function linhaAbertaTabuleiro(tabuleiro: TTabuleiro; coluna:Integer) : Integer;
   function localValido(tabuleiro: TTabuleiro; coluna : Integer) : Boolean;
-  procedure poePca(tabuleiro : TTabuleiro; linha, coluna, peca: Integer);
+  function poePca(tabuleiro : TTabuleiro; linha, coluna, peca: Integer) : TTabuleiro;
+  function minhaCopia(linha: TLinha; inicio, tamanho : Integer) : TLinha;
+  function movimentoVencedor(tabuleiro: TTabuleiro; peca: Integer ): Boolean;
 
   type
   { TPlayer2 }
 
   TPlayer2 = class(TThread)
   private
+    FAtualizaTela: TMethodPtr;
     FEstado: TEstado;
     FRun: boolean;
     FTabuleiro: PWidthArray;
-    locaisValidos: TStringArray;
     procedure Execute; override;
-    function minimax(tabuleiro : TTabuleiro;profundidade, alpha, beta:Single; MaxJogador : Boolean; out colunaRet : Integer) : Integer;
+    function minimax(tabuleiro : TTabuleiro;profundidade, alpha, beta:Single; MaxJogador : Boolean) : TMinMax;
     procedure teste;
-    procedure determinaLocalValidos(tabuleiro : TTabuleiro);
-    function pontuaPosicao(tabuleiro: TTabuleiro; peca: Integer) : Integer;
+    function determinaLocalValidos(tabuleiro : TTabuleiro) :TLinha;
+    function pontuaPosicao(tab: TTabuleiro; peca: Integer) : Integer;
     function avaliaJanela(janela : TLinha; peca : Integer) : Integer;
   protected
 
@@ -57,6 +67,8 @@ type
     property run: boolean read FRun write FRun default true;
     property estado : TEstado read FEstado write FEstado default eEsperar;
     property tabuleiro : PWidthArray read FTabuleiro write FTabuleiro;
+    property totalJogadasPC : Integer read FtotalJogadasPC write FtotalJogadasPC;
+    property atualizaTela: TMethodPtr read FAtualizaTela write FAtualizaTela;
   end;
 
   type
@@ -64,7 +76,16 @@ type
   TfrmLigue4 = class(TForm)
     DrawGrid1: TDrawGrid;
     ImageList1: TImageList;
+    Label1: TLabel;
+    Label2: TLabel;
+    Label3: TLabel;
+    Label4: TLabel;
+    Label5: TLabel;
+    lblTempo: TLabel;
+    lblNJogadasHumano: TLabel;
+    lblNJogadasIA: TLabel;
     PaintBox1: TPaintBox;
+    Timer1: TTimer;
     procedure DrawGrid1DrawCell(Sender: TObject; aCol, aRow: Integer;
       aRect: TRect; aState: TGridDrawState);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -78,11 +99,14 @@ type
 
 
     function localValido(Coluna, corPeca: Integer): Boolean;
+    procedure Timer1Timer(Sender: TObject);
 
   private
     tabuleiro : TTabuleiro;
     Player2 : TPlayer2;
-
+    totalJogadasHumano : Integer;
+    totalJogadasPC : Integer;
+    hora, minuto, segundo : Integer;
   public
 
   end;
@@ -96,7 +120,8 @@ function pegalinha(tabuleiro: TTabuleiro; linha: Integer): TLinha;
 var
   i : Integer;
 begin
-  SetLength(Result, MAX_COLUNA);
+  SetLength(Result, 0);
+  SetLength(Result, MAX_COLUNA + 1);
   for i := 0 to MAX_COLUNA do
   begin
     Result[i] := tabuleiro[linha, i];
@@ -107,7 +132,8 @@ function pegaColuna(tabuleiro: TTabuleiro; coluna: Integer): TLinha;
 var
   i : Integer;
 begin
-  SetLength(Result, MAX_LINHA);
+  SetLength(Result, 0);
+  SetLength(Result, MAX_LINHA + 1);
   for i := 0 to MAX_LINHA do
   begin
     Result[i] := tabuleiro[i, coluna];
@@ -133,9 +159,24 @@ function pegaDiagonal(tabuleiro: TTabuleiro; linha, coluna, tamanho: Integer
 var
   k : Integer;
 begin
- for k := 0 to tamanho do
+ SetLength(Result, 0);
+ SetLength(Result, tamanho);
+ for k := 0 to tamanho - 1 do
   begin
-   Result[k] := tabuleiro[linha + k, coluna + k];
+   Result[k] := tabuleiro[linha - k, coluna + k];
+  end;
+end;
+
+function pegaDiagonal2(tabuleiro: TTabuleiro; linha, coluna, tamanho: Integer
+  ): TLinha;
+var
+  k : Integer;
+begin
+ SetLength(Result, 0);
+ SetLength(Result, tamanho);
+ for k := 0 to tamanho - 1 do
+  begin
+   Result[k] := tabuleiro[linha - k, coluna - k];
   end;
 end;
 
@@ -143,11 +184,11 @@ function linhaAbertaTabuleiro(tabuleiro: TTabuleiro; coluna: Integer): Integer;
 var
   i : Integer;
 begin
-  for i := 0 to MAX_LINHA do
+  for i := MAX_LINHA downto 0  do
    begin
     if tabuleiro[i,coluna] = 0 then
      begin
-      Result := 0;
+      Result := i;
       break;
      end;
    end;
@@ -156,12 +197,86 @@ end;
 function localValido(tabuleiro: TTabuleiro; coluna: Integer
   ): Boolean;
 begin
-  Result :=  tabuleiro[MAX_LINHA - 1, coluna] = CASA_VAZIA;
+  Result :=  tabuleiro[0, coluna] = CASA_VAZIA;
 end;
 
-procedure poePca(tabuleiro: TTabuleiro; linha, coluna, peca: Integer);
+function poePca(tabuleiro: TTabuleiro; linha, coluna, peca: Integer
+  ): TTabuleiro;
 begin
   tabuleiro[linha, coluna] := peca;
+  Result := tabuleiro ;
+end;
+
+function minhaCopia(linha: TLinha; inicio, tamanho: Integer): TLinha;
+var i, j : Integer;
+begin
+  SetLength(Result, 0);
+  SetLength(Result, tamanho);
+  j := 0;
+  for i := inicio to (inicio + 4) - 1  do
+   begin
+    Result[j] := linha[i];
+    inc(j)
+   end;
+end;
+
+function movimentoVencedor(tabuleiro: TTabuleiro; peca: Integer): Boolean;
+var
+  i, j : Integer;
+begin
+ Result := False;
+
+ for j := 0 to MAX_COLUNA - 3 do
+  begin
+   for i := 0 to MAX_LINHA do
+    begin
+     if (tabuleiro[i,j] = peca) and (tabuleiro[i,j + 1] = peca) and
+        (tabuleiro[i,j + 2] = peca) and (tabuleiro[i,j + 3] = peca) then
+         begin
+          Result := True;
+          exit
+         end;
+    end;
+  end;
+
+ for j := 0 to MAX_COLUNA do
+  begin
+   for i := 0 to MAX_LINHA - 3 do
+    begin
+     if (tabuleiro[i,j] = peca) and (tabuleiro[i + 1,j] = peca) and
+        (tabuleiro[i + 2, j] = peca) and (tabuleiro[i + 3, j] = peca) then
+         begin
+          Result := True;
+          exit
+         end;
+    end;
+  end;
+
+ for j := 0 to MAX_COLUNA - 3 do
+  begin
+   for i := 3 to MAX_LINHA do
+    begin
+     if (tabuleiro[i,j] = peca) and (tabuleiro[i - 1,j + 1] = peca) and
+        (tabuleiro[i - 2,j + 2] = peca) and (tabuleiro[i - 3,j + 3] = peca) then
+         begin
+          Result := True;
+          exit
+         end;
+    end;
+  end;
+
+  for j := 3 to MAX_COLUNA do
+  begin
+   for i := 3 to MAX_LINHA do
+    begin
+     if (tabuleiro[i,j] = peca) and (tabuleiro[i - 1,j - 1] = peca) and
+        (tabuleiro[i - 2,j - 2] = peca) and (tabuleiro[i - 3,j -3] = peca) then
+         begin
+          Result := True;
+          exit
+         end;
+    end;
+  end;
 end;
 
 
@@ -171,22 +286,40 @@ end;
 
 procedure TPlayer2.Execute;
 var
-  colunaRet, valor, linha : Integer;
+  valor, linha : Integer;
+  minMaxResult : TMinMax;
 
 begin
   While Frun do
   begin
 
    case Festado of
+    eAvaliar:
+     begin
+       minMaxResult := minimax(FTabuleiro^,5, -Infinity, Infinity, True);
+       valor := minMaxResult.pontuacao;
+       FEstado := eMovimento;
+     end;
     eMovimento:
      begin
-      valor := minimax(FTabuleiro^,5, -Infinity, Infinity, True, colunaRet);
-      if localValido(FTabuleiro^, colunaRet) then
+      if localValido(FTabuleiro^, minMaxResult.coluna) then
        begin
-        linha :=linhaAbertaTabuleiro(FTabuleiro^,colunaRet);
-        poePca(FTabuleiro^,linha, colunaRet, PECA_AMARELA);
-        FEstado:= eEsperar;
+        linha :=linhaAbertaTabuleiro(FTabuleiro^, minMaxResult.coluna);
+        if localValido(FTabuleiro^, minMaxResult.coluna) then
+          FTabuleiro^ := poePca(FTabuleiro^,linha,  minMaxResult.coluna, PECA_AMARELA);
+        FEstado:= eAtualizar;
        end;
+     end;
+    eAtualizar:
+     begin
+       Synchronize(atualizaTela);
+       FEstado:= eAvaliaMovimento;
+     end;
+    eAvaliaMovimento:
+     begin
+      if movimentoVencedor(tabuleiro^,PECA_AMARELA) then
+         Synchronize(@teste);
+      FEstado:= eEsperar;
      end;
     eEsperar:
       begin
@@ -201,71 +334,71 @@ begin
 end;
 
 function TPlayer2.minimax(tabuleiro: TTabuleiro; profundidade, alpha,
-  beta: Single; MaxJogador: Boolean; out colunaRet: Integer): Integer;
+  beta: Single; MaxJogador: Boolean): TMinMax;
 var
   val : Single;
   aux,tmp, coluna, linha, col, novaPontuacao : Integer;
   x : String;
   i : Integer;
   tabCopia : TTabuleiro;
+  locaisValidos : TLinha;
 begin
+  locaisValidos := determinaLocalValidos(tabuleiro);
   if profundidade = 0 then
    begin
-     Result := pontuaPosicao(tabuleiro, PECA_AMARELA);
+     Result.pontuacao := pontuaPosicao(tabuleiro, PECA_AMARELA);
+     Result.coluna:= -1;
      exit;
    end;
-  determinaLocalValidos(tabuleiro);
   if MaxJogador then
    begin
      val := -Infinity;
      Randomize;
-     aux := Random(Length(locaisValidos) - 1);
-     x := locaisValidos[aux].split(',')[1];
-     coluna := strToInt(x);
+     aux := Random(Length(locaisValidos));
+     coluna := locaisValidos[aux];
      for i:= 0 to Length(LocaisValidos) - 1 do
       begin
-         col := StrToInt(locaisValidos[i].trim.Split(',')[0]);
-         linha := linhaAbertaTabuleiro(FTabuleiro^, col);
+         col := locaisValidos[i];
+         linha := linhaAbertaTabuleiro(tabuleiro, col);
          tabCopia := tabuleiro;
-         poePca(tabCopia,linha, col, PECA_AMARELA);
-         novaPontuacao:= minimax(tabCopia, profundidade - 1, alpha, beta, False, colunaRet);
+         tabCopia := poePca(tabCopia,linha, col, PECA_AMARELA);
+         novaPontuacao:= minimax(tabCopia, profundidade - 1, alpha, beta, False).pontuacao;
          if novaPontuacao > val then
           begin
             val := novaPontuacao;
             coluna := col;
           end;
-         alpha := max(Alpha, val);
+         alpha := max(val, Alpha);
          if alpha >= beta then
           break;
       end;
-      Result := round(val);
-      colunaRet:= coluna;
+      Result.pontuacao := round(val);
+      Result.coluna:= coluna;
    end
   else
    begin
     val := Infinity;
     Randomize;
-    aux := Random(Length(locaisValidos) - 1);
-    x := locaisValidos[aux].split(',')[1];
-    coluna := strToInt(x);
+    aux := Random(Length(locaisValidos));
+    coluna := locaisValidos[aux];
     for i:= 0 to Length(LocaisValidos) - 1 do
      begin
-      col := StrToInt(locaisValidos[i].trim.Split(',')[0]);
-      linha := linhaAbertaTabuleiro(FTabuleiro^, col);
+      col := locaisValidos[i];
+      linha := linhaAbertaTabuleiro(tabuleiro, col);
       tabCopia := tabuleiro;
-      poePca(tabCopia,linha, col, PECA_VERMELHA);
-      novaPontuacao:= minimax(tabCopia,profundidade - 1, alpha, beta, True, colunaRet);
+      tabCopia := poePca(tabCopia,linha, col, PECA_VERMELHA);
+      novaPontuacao:= minimax(tabCopia,profundidade - 1, alpha, beta, True).pontuacao;
       if novaPontuacao < val then
        begin
         val := novaPontuacao;
         coluna := col;
        end;
-      beta := min(Beta, val);
-      if beta >= alpha then
+      beta := min(val, Beta);
+      if alpha >= beta then
        break;
      end;
-      Result := round(val);
-      colunaRet:= coluna;
+    Result.pontuacao := round(val);
+    Result.coluna:= coluna;
    end;
 end;
 
@@ -274,33 +407,26 @@ begin
   showmessage('é o que vc esperava');
 end;
 
-procedure TPlayer2.determinaLocalValidos(tabuleiro: TTabuleiro);
+function TPlayer2.determinaLocalValidos(tabuleiro: TTabuleiro): TLinha;
 var
-  aux: String;
-  i, j : Integer;
+  j,i : Integer;
 begin
- aux := '';
- for i := 0 to  MAX_LINHA do
+  i := 0;
+  SetLength(Result, i);
   for j := 0 to MAX_COLUNA do
    begin
-    if tabuleiro[i,j] = CASA_VAZIA then
+    if tabuleiro[0, j] = 0 then
      begin
-      if aux = EmptyStr then
-       aux := intToStr(i) + ',' + intToStr(j)
-      else
-       aux :=  aux + ';' + intToStr(i) + ',' + intToStr(j);
-      end;
-    end;
-
-  if locaisValidos = nil then
-  locaisValidos := TStringArray.Create;
-
- locaisValidos := aux.Split(';');
+      SetLength(Result, i + 1);
+      Result[i] := j;
+      Inc(i);
+     end;
+   end;
 
 
 end;
 
-function TPlayer2.pontuaPosicao(tabuleiro: TTabuleiro; peca: Integer): Integer;
+function TPlayer2.pontuaPosicao(tab: TTabuleiro; peca: Integer): Integer;
 var
  pontuacao, cont_peca : Integer;
  colunaDoMeio, colunaAux, linhaAux, janela : TLinha;
@@ -310,16 +436,17 @@ begin
  pontuacao := 0;
  cont_peca := 0;
 
-  colunaDoMeio := pegaColuna(tabuleiro, MAX_COLUNA div 2);
-  pontuacao:= pontuacao + cont_peca * 3;
+  colunaDoMeio := pegaColuna(tab, MAX_COLUNA div 2);
+  cont_peca := contaValores(colunaDoMeio, peca);
+  pontuacao:= pontuacao + cont_peca * 6;
 
   //Pontuacao na horizontal
   for i := 0 to MAX_LINHA do
    begin
-    linhaAux := pegalinha(tabuleiro,i);
+    linhaAux := pegalinha(tab,i);
     for j:= 0 to MAX_COLUNA - 3 do
      begin
-       janela := Copy(linhaAux,j, j + TAMANHO_JANELA);
+       janela := minhaCopia(linhaAux, j, TAMANHO_JANELA);
        pontuacao := pontuacao + avaliaJanela(janela, peca);
      end;
    end;
@@ -327,29 +454,29 @@ begin
   //Pontuacao na Vertical
   for j:= 0 to MAX_COLUNA do
    begin
-    colunaAux := pegaColuna(tabuleiro, j);
+    colunaAux := pegaColuna(tab, j);
     for i:= 0 to MAX_LINHA - 3 do
      begin
-      janela := Copy(colunaAux,i, i + TAMANHO_JANELA);
+      janela := minhaCopia(colunaAux,i,TAMANHO_JANELA);
       pontuacao := pontuacao + avaliaJanela(janela, peca);
      end;
    end;
 
   //Pontuacao na diagonal
-  for i := 0 to MAX_LINHA - 3 do
+  for i := 3 to MAX_LINHA do
    begin
     for j := 0 to MAX_COLUNA - 3 do
      begin
-      janela := pegaDiagonal(tabuleiro, i, j, TAMANHO_JANELA);
+      janela := pegaDiagonal(tab, i, j, TAMANHO_JANELA);
       pontuacao := pontuacao + avaliaJanela(janela, peca);
      end;
    end;
 
-  for i := 0 to MAX_LINHA - 3 do
+  for i := 3 to MAX_LINHA do
    begin
-    for j := 0 to MAX_COLUNA - 3 do
+    for j := 3 to MAX_COLUNA do
      begin
-      janela := pegaDiagonal(tabuleiro, i + 3, j, TAMANHO_JANELA);
+      janela := pegaDiagonal2(tab, i, j, TAMANHO_JANELA);
       pontuacao := pontuacao + avaliaJanela(janela, peca);
      end;
    end;
@@ -423,22 +550,38 @@ begin
       begin
          tabuleiro[i,j] := CASA_VAZIA;
       end;
+   Label1.Font.Color:= $0303cf;
+   Label2.Font.Color:= $0303cf;
+   lblNJogadasHumano.Font.Color:= $0303cf;
 
    Player2 := TPlayer2.create();
    Player2.FreeOnTerminate:= True;
    Player2.estado := eEsperar;
    Player2.tabuleiro := @tabuleiro;
+   Player2.atualizaTela:= @atualizaTabuleiroVisual;
    Player2.Start;
+
+   hora := 0;
+   minuto := 0;
+   segundo := 0;
 end;
+
 
 procedure TfrmLigue4.PaintBox1MouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
- PaintBox1.Canvas.Clear;
- PaintBox1.Canvas.Brush.Color:= TColor($0303cf);
- PaintBox1.Canvas.Ellipse(X - 45, Y - 45, X + 45, Y + 45);
- PaintBox1.Canvas.Brush.Color:= frmLigue4.Color;
+if Player2.estado = eEsperar then
+ begin
+  PaintBox1.Canvas.Clear;
+  PaintBox1.Canvas.Brush.Color:= TColor($0303cf);
+  PaintBox1.Canvas.Ellipse(X - 45, Y - 45, X + 45, Y + 45);
+  PaintBox1.Canvas.Brush.Color:= frmLigue4.Color;
+ end
+  else
+    PaintBox1.Canvas.Clear;
+
 end;
+
 
 procedure TfrmLigue4.PaintBox1MouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
@@ -477,7 +620,10 @@ begin
   if localValido(index,PECA_VERMELHA) then
    begin
      atualizaTabuleiroVisual;
-     Player2.estado:= eMovimento;
+     if not movimentoVencedor(tabuleiro, PECA_VERMELHA) then
+          Player2.estado:= eAvaliar
+     else
+       Showmessage('venceu a maquina');
    end;
 end;
 
@@ -500,6 +646,24 @@ begin
            break;
         end;
     end;
+end;
+
+procedure TfrmLigue4.Timer1Timer(Sender: TObject);
+begin
+  Inc(segundo);
+  if(segundo = 60) then
+   begin
+    segundo:= 0;
+    Inc(Minuto);
+   end;
+
+  if(minuto = 60) then
+   begin
+    minuto:= 0;
+    Inc(hora);
+   end;
+
+   lblTempo.Caption := Format('%2.2d',[Hora]) + ':' + Format('%2.2d',[Minuto]) + ':' + Format('%2.2d',[Segundo]);
 end;
 
 
