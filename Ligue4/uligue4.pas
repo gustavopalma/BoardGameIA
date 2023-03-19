@@ -52,6 +52,7 @@ TMethodPtr = procedure of object;
     FEstado: TEstado;
     FRun: boolean;
     FTabuleiro: PWidthArray;
+    FtotalJogadasPC: PInteger;
     procedure Execute; override;
     function minimax(tabuleiro : TTabuleiro;profundidade, alpha, beta:Single; MaxJogador : Boolean) : TMinMax;
     procedure teste;
@@ -67,7 +68,7 @@ TMethodPtr = procedure of object;
     property run: boolean read FRun write FRun default true;
     property estado : TEstado read FEstado write FEstado default eEsperar;
     property tabuleiro : PWidthArray read FTabuleiro write FTabuleiro;
-    property totalJogadasPC : Integer read FtotalJogadasPC write FtotalJogadasPC;
+    property totalJogadasPC : PInteger read FtotalJogadasPC write FtotalJogadasPC;
     property atualizaTela: TMethodPtr read FAtualizaTela write FAtualizaTela;
   end;
 
@@ -307,6 +308,7 @@ begin
         linha :=linhaAbertaTabuleiro(FTabuleiro^, minMaxResult.coluna);
         if localValido(FTabuleiro^, minMaxResult.coluna) then
           FTabuleiro^ := poePca(FTabuleiro^,linha,  minMaxResult.coluna, PECA_AMARELA);
+        Inc(FtotalJogadasPC^);
         FEstado:= eAtualizar;
        end;
      end;
@@ -554,11 +556,16 @@ begin
    Label2.Font.Color:= $0303cf;
    lblNJogadasHumano.Font.Color:= $0303cf;
 
+   Label3.Font.Color := $04E5FE;
+   Label4.Font.Color := $04E5FE;
+   lblNJogadasIA.Font.Color := $04E5FE;
+
    Player2 := TPlayer2.create();
    Player2.FreeOnTerminate:= True;
    Player2.estado := eEsperar;
    Player2.tabuleiro := @tabuleiro;
    Player2.atualizaTela:= @atualizaTabuleiroVisual;
+   Player2.totalJogadasPC := @totalJogadasPC;
    Player2.Start;
 
    hora := 0;
@@ -616,7 +623,7 @@ begin
    begin
     index  := 6;
    end;
-
+  Inc(totalJogadasHumano);
   if localValido(index,PECA_VERMELHA) then
    begin
      atualizaTabuleiroVisual;
@@ -631,6 +638,8 @@ procedure TfrmLigue4.atualizaTabuleiroVisual;
 begin
  DrawGrid1.BeginUpdate;
  DrawGrid1.EndUpdate;
+ lblNJogadasHumano.Caption:= IntToStr(totalJogadasHumano);
+ lblNJogadasIA.Caption:= IntToStr(totalJogadasPC);
 end;
 
 function TfrmLigue4.localValido(Coluna, corPeca: Integer): Boolean;
