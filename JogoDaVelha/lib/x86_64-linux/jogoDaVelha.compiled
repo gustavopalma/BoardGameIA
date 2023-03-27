@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Compiler Value="/home/gustavo/fpcupdeluxe/lazarus/fpc/bin/x86_64-linux/fpc.sh" Date="1679089428"/>
+  <Params Value=" -MObjFPC -Scghi -Cg -O1 -gw2 -godwarfsets -gl -l -vewnhibq -Fi/home/gustavo/Sources/BoardGameIA/JogoDaVelha/lib/x86_64-linux -Fu/home/gustavo/fpcupdeluxe/lazarus/lazarus/lcl/units/x86_64-linux/gtk2 -Fu/home/gustavo/fpcupdeluxe/lazarus/lazarus/lcl/units/x86_64-linux -Fu/home/gustavo/fpcupdeluxe/lazarus/lazarus/components/freetype/lib/x86_64-linux -Fu/home/gustavo/fpcupdeluxe/lazarus/lazarus/components/lazutils/lib/x86_64-linux -Fu/home/gustavo/fpcupdeluxe/lazarus/lazarus/packager/units/x86_64-linux -Fu/home/gustavo/Sources/BoardGameIA/JogoDaVelha/ -FU/home/gustavo/Sources/BoardGameIA/JogoDaVelha/lib/x86_64-linux/ -FE/home/gustavo/Sources/BoardGameIA/JogoDaVelha/ -o/home/gustavo/Sources/BoardGameIA/JogoDaVelha/jogoDaVelha -dLCL -dLCLgtk2 jogoDaVelha.lpr"/>
+</CONFIG>
