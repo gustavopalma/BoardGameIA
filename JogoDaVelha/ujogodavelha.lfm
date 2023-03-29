@@ -8,12 +8,14 @@ object frmJogoDaVelha: TfrmJogoDaVelha
   ClientWidth = 966
   DesignTimePPI = 120
   OnCreate = FormCreate
+  Position = poScreenCenter
   LCLVersion = '2.2.6.0'
   object DrawGrid1: TDrawGrid
     Left = 336
     Height = 604
     Top = 80
     Width = 604
+    Anchors = [akRight, akBottom]
     ColCount = 3
     ExtendedSelect = False
     FixedCols = 0

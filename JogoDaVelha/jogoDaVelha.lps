@@ -11,7 +11,7 @@
         <WindowIndex Value="-1"/>
         <TopLine Value="-1"/>
         <CursorPos X="-1" Y="-1"/>
-        <UsageCount Value="101"/>
+        <UsageCount Value="103"/>
       </Unit>
       <Unit>
         <Filename Value="ujogodavelha.pas"/>
@@ -22,8 +22,8 @@
         <UnitName Value="uJogoDaVelha"/>
         <IsVisibleTab Value="True"/>
         <TopLine Value="406"/>
-        <CursorPos X="57" Y="429"/>
-        <UsageCount Value="101"/>
+        <CursorPos X="69" Y="420"/>
+        <UsageCount Value="103"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit>
@@ -33,7 +33,7 @@
         <EditorIndex Value="2"/>
         <TopLine Value="1512"/>
         <CursorPos X="14" Y="1524"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="12"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -42,7 +42,7 @@
         <EditorIndex Value="3"/>
         <TopLine Value="775"/>
         <CursorPos X="8" Y="799"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="12"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -51,7 +51,7 @@
         <EditorIndex Value="1"/>
         <TopLine Value="44"/>
         <CursorPos X="3" Y="58"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit>
     </Units>
