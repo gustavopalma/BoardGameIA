@@ -5,7 +5,8 @@ unit uJogoDaVelha;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, Types, math;
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, ExtCtrls,
+  StdCtrls, Types, math, LCLType;
 
 const MAX_LINHA = 2;
 const MAX_COLUNA = 2;
@@ -35,18 +36,25 @@ type TMinMax = record
    pontuacao: Single;
 end;
 
+type
+TMethodPtr = procedure of object;
+
   type
   { TPlayer2 }
 
   TPlayer2 = class(TThread)
   private
+    FAtualizaTela: TMethodPtr;
     FEstado: TEstado;
+    FreiniciaJogo: TMethodPtr;
     FRun: boolean;
     FTabuleiro: PWidthArray;
+    FtotalJogadasPC: PInteger;
+    Fvencedor: Integer;
     procedure Execute; override;
     function minimax(tabuleiro : TTabuleiro;profundidade, jogador: Integer) : TMinMax;
     function fimdejogo(tabuleiro : TTabuleiro) : Boolean;
-    function vencedor(tabuleiro : TTabuleiro; Jogador: Integer) : Boolean;
+    function determinaVencedor(tabuleiro : TTabuleiro; Jogador: Integer) : Boolean;
     function pontuaPosicao(tabuleiro: TTabuleiro) : Integer;
     function determinaLocalValidos(tabuleiro : TTabuleiro) :TCoords;
     procedure teste;
@@ -61,6 +69,10 @@ end;
     property run: boolean read FRun write FRun default true;
     property estado : TEstado read FEstado write FEstado default eEsperar;
     property tabuleiro : PWidthArray read FTabuleiro write FTabuleiro;
+    property atualizaTela: TMethodPtr read FAtualizaTela write FAtualizaTela;
+    property vencedor : Integer read Fvencedor write Fvencedor;
+    property totalJogadasPC : PInteger read FtotalJogadasPC write FtotalJogadasPC;
+    property reiniciaJogo: TMethodPtr read FreiniciaJogo write FreiniciaJogo;
   end;
 
 
@@ -71,13 +83,26 @@ type
   TfrmJogoDaVelha = class(TForm)
     DrawGrid1: TDrawGrid;
     ImageList1: TImageList;
+    lblJogadasIa: TLabel;
+    lblTempo: TLabel;
+    lblTempo1: TLabel;
+    lblTempo2: TLabel;
+    lblJogadasHumano: TLabel;
+    lblTempo3: TLabel;
+    Timer1: TTimer;
     procedure DrawGrid1Click(Sender: TObject);
     procedure DrawGrid1DrawCell(Sender: TObject; aCol, aRow: Integer;
       aRect: TRect; aState: TGridDrawState);
     procedure FormCreate(Sender: TObject);
+    procedure atualizaTabuleiroVisual;
+    procedure Timer1Timer(Sender: TObject);
+    procedure reiniciaJogo;
   private
    tabuleiro : TTabuleiro;
    Player2 : TPlayer2;
+   totalJogadasHumano : Integer;
+   totalJogadasPC : Integer;
+   hora, minuto, segundo : Integer;
   public
 
   end;
@@ -94,6 +119,8 @@ implementation
 procedure TPlayer2.Execute;
 var
   movimento : TMinMax;
+  profundidade : Integer;
+  locaisValidos : TCoords;
 begin
  while Frun do
   begin
@@ -106,12 +133,16 @@ begin
           FEstado:= eEsperar;
           continue;
          end;
-        movimento := minimax(FTabuleiro^,3,O);
+        locaisValidos := determinaLocalValidos(FTabuleiro^);
+        profundidade := length(locaisValidos);
+        movimento := minimax(FTabuleiro^,profundidade,O);
         FEstado := eMovimento;
        end;
       eMovimento:
        begin
-        FTabuleiro^[movimento.ponto1, movimento.ponto2] := O;
+         FTabuleiro^[movimento.ponto1, movimento.ponto2] := O;
+         Inc(FtotalJogadasPC^);
+         Synchronize(atualizaTela);
          if fimdejogo(FTabuleiro^) then
          begin
           Synchronize(@teste);
@@ -135,7 +166,6 @@ var
   locaisValidos : TCoords;
   localValido : TCoord;
   i : Integer;
-  tabCopia : TTabuleiro;
 begin
   Result.ponto1 := -1;
   Result.ponto2 := -1;
@@ -155,32 +185,50 @@ begin
         exit;
      end;
 
+
     locaisValidos := determinaLocalValidos(tabuleiro);
-    tabCopia := tabuleiro;
     for i := 0 to Length(locaisValidos) - 1 do
      begin
-       tabCopia[locaisValidos[i].X, locaisValidos[i].Y] := jogador;
-       if jogador = X then
+       tabuleiro[locaisValidos[i].X, locaisValidos[i].Y] := jogador;
+       if jogador = O then
         begin
-         pontuacao := minimax(tabCopia, profundidade - 1, O);
-         if pontuacao.ponto2 < Result.ponto2 then
+         pontuacao := minimax(tabuleiro, profundidade - 1, X);
+         tabuleiro[locaisValidos[i].X, locaisValidos[i].Y] := CASA_VAZIA;
+         pontuacao.ponto1:= locaisValidos[i].X;
+         pontuacao.ponto2:= locaisValidos[i].Y;
+         if pontuacao.pontuacao > Result.pontuacao then
           Result := pontuacao;
         end
        else
         begin
-          pontuacao := minimax(tabCopia, profundidade - 1, X);
-          if pontuacao.ponto2 > Result.ponto2 then
+          pontuacao := minimax(tabuleiro, profundidade - 1, O);
+          tabuleiro[locaisValidos[i].X, locaisValidos[i].Y] := CASA_VAZIA;
+          pontuacao.ponto1:= locaisValidos[i].X;
+          pontuacao.ponto2:= locaisValidos[i].Y;
+          if pontuacao.pontuacao < Result.pontuacao then
            Result := pontuacao;
         end;
      end;
 end;
 
 function TPlayer2.fimdejogo(tabuleiro: TTabuleiro): Boolean;
+var
+  lugaresValidos : Tcoords;
 begin
-   Result := vencedor(tabuleiro, X) or vencedor(tabuleiro, O);
+
+   lugaresValidos := determinaLocalValidos(tabuleiro);
+
+   if determinaVencedor(tabuleiro, X) then
+    Fvencedor := X
+   else if determinaVencedor(tabuleiro, O) then
+    Fvencedor := O
+   else
+     Fvencedor := -1;
+   Result := determinaVencedor(tabuleiro, X) or determinaVencedor(tabuleiro, O) or (Length(lugaresValidos) = 0)
 end;
 
-function TPlayer2.vencedor(tabuleiro: TTabuleiro; Jogador: Integer): Boolean;
+function TPlayer2.determinaVencedor(tabuleiro: TTabuleiro; Jogador: Integer
+  ): Boolean;
 var
   i, j : Integer;
 begin
@@ -197,7 +245,7 @@ begin
    end;
 
  //verifica se o jogador ganhou numa coluna
-  for j := 0 to MAX_COLUNA - 1 do
+  for j := 0 to MAX_COLUNA do
    begin
      if (tabuleiro[0,j] = Jogador) and (tabuleiro[1,j] = Jogador) and
         (tabuleiro[2,j] = Jogador) then
@@ -208,22 +256,27 @@ begin
    end;
 
   //verifica se o jogador ganhou numa diagonal
-  if ((tabuleiro[0,0] = Jogador) or (tabuleiro[0,2] = Jogador)) and
-     (tabuleiro[1,1] = Jogador) and
-     ((tabuleiro[2,2] = Jogador) or (tabuleiro[2,0] = Jogador)) then
-       begin
-        Result := True;
-        exit
-       end;
+  if (tabuleiro[0,0] = Jogador) and (tabuleiro[1,1] = Jogador) and
+     (tabuleiro[2,2] = Jogador) then
+      begin
+       Result := True;
+       exit
+      end;
+  if (tabuleiro[0,2] = Jogador) and (tabuleiro[1,1] = Jogador) and
+      (tabuleiro[2,0] = Jogador) then
+      begin
+       Result := True;
+       exit
+      end;
 end;
 
 function TPlayer2.pontuaPosicao(tabuleiro: TTabuleiro): Integer;
 begin
   Result := 0;
-  if vencedor(tabuleiro, O) then
-    Inc(Result)
-  else if vencedor(tabuleiro, 1) then
-    Dec(Result)
+  if determinaVencedor(tabuleiro, O) then
+    Result := 1
+  else if determinaVencedor(tabuleiro, X) then
+    Result := -1
   else
    Result := 0;
 end;
@@ -255,8 +308,29 @@ begin
 end;
 
 procedure TPlayer2.teste;
+var
+Resultado: Integer;
+msg:String;
 begin
-  showmessage('finm de jogo');
+  if vencedor = X then
+    msg := 'Você Venceu, Deseja Jogar Novamente?'
+  else if vencedor = O then
+    msg := 'computador Venceu, Deseja Jogar Novamente?'
+  else
+    msg :='Empate, Deseja Jogar Novamente?';
+
+  Resultado := Application.MessageBox(Pchar(msg),'Fim de Jogo', MB_YESNO + MB_ICONEXCLAMATION);
+  case Resultado of
+    mryes: // usuário clicou Sim
+     begin
+       reiniciaJogo;
+     end;
+    mrNo:
+     begin
+      Application.Terminate;
+     end;
+  end;
+
 end;
 
 constructor TPlayer2.Create;
@@ -292,12 +366,68 @@ begin
          tabuleiro[i,j] := CASA_VAZIA;
       end;
 
+   totalJogadasHumano := 0;
+   totalJogadasPC := 0;
+
    Player2 := TPlayer2.create();
    Player2.FreeOnTerminate:= True;
    Player2.estado := eEsperar;
    Player2.tabuleiro := @tabuleiro;
+   Player2.atualizaTela := @atualizaTabuleiroVisual;
+   Player2.totalJogadasPC := @totalJogadasPC;
+   Player2.reiniciaJogo := @reiniciaJogo;
    Player2.Start;
 
+end;
+
+procedure TfrmJogoDaVelha.atualizaTabuleiroVisual;
+begin
+  DrawGrid1.BeginUpdate;
+  DrawGrid1.EndUpdate;
+  lblJogadasHumano.Caption:= IntToStr(totalJogadasHumano);
+  lblJogadasIa.Caption:= IntToStr(totalJogadasPC);
+end;
+
+procedure TfrmJogoDaVelha.Timer1Timer(Sender: TObject);
+begin
+   Inc(segundo);
+  if(segundo = 60) then
+   begin
+    segundo:= 0;
+    Inc(Minuto);
+   end;
+
+  if(minuto = 60) then
+   begin
+    minuto:= 0;
+    Inc(hora);
+   end;
+
+   lblTempo.Caption := Format('%2.2d',[Hora]) + ':' + Format('%2.2d',[Minuto]) + ':' + Format('%2.2d',[Segundo]);
+end;
+
+procedure TfrmJogoDaVelha.reiniciaJogo;
+var
+  i, j : Integer;
+begin
+ for i := 0 to MAX_LINHA do
+  begin
+   for j := 0 to MAX_COLUNA do
+    begin
+     tabuleiro[i,j] := CASA_VAZIA;
+    end;
+  end;
+ atualizaTabuleiroVisual;
+ Timer1.Enabled := False;
+ segundo := 0;
+ minuto := 0;
+ hora := 0;
+ lblTempo.Caption := Format('%2.2d',[Hora]) + ':' + Format('%2.2d',[Minuto]) + ':' + Format('%2.2d',[Segundo]);
+ totalJogadasHumano := 0;
+ totalJogadasPC := 0;
+ lblJogadasIa.Caption := IntToStr(totalJogadasPC);
+ lblJogadasHumano.Caption:=IntToStr(totalJogadasHumano);
+ Timer1.Enabled := True;
 end;
 
 procedure TfrmJogoDaVelha.DrawGrid1DrawCell(Sender: TObject; aCol, aRow: Integer;
@@ -314,8 +444,8 @@ begin
    (Player2.estado = eEsperar) then
    begin
     tabuleiro[DrawGrid1.Row, DrawGrid1.Col] := X;
-    DrawGrid1.BeginUpdate;
-    DrawGrid1.EndUpdate;
+    Inc(totalJogadasHumano);
+    atualizaTabuleiroVisual;
     Player2.estado := eAvaliar;
    end;
 end;

@@ -1,18 +1,19 @@
 object frmJogoDaVelha: TfrmJogoDaVelha
-  Left = 3458
-  Height = 746
-  Top = 91
-  Width = 935
-  Caption = 'frmJogoDaVelha'
-  ClientHeight = 746
-  ClientWidth = 935
+  Left = 3526
+  Height = 706
+  Top = 146
+  Width = 966
+  Caption = 'Jogo da Velha'
+  ClientHeight = 706
+  ClientWidth = 966
+  DesignTimePPI = 120
   OnCreate = FormCreate
-  LCLVersion = '2.2.7.0'
+  LCLVersion = '2.2.6.0'
   object DrawGrid1: TDrawGrid
-    Left = 168
-    Height = 603
-    Top = 64
-    Width = 603
+    Left = 336
+    Height = 604
+    Top = 80
+    Width = 604
     ColCount = 3
     ExtendedSelect = False
     FixedCols = 0
@@ -24,11 +25,95 @@ object frmJogoDaVelha: TfrmJogoDaVelha
     OnClick = DrawGrid1Click
     OnDrawCell = DrawGrid1DrawCell
   end
+  object lblTempo: TLabel
+    Left = 96
+    Height = 41
+    Top = 643
+    Width = 118
+    Caption = '00:00:00'
+    Font.CharSet = ANSI_CHARSET
+    Font.Height = -30
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object lblTempo1: TLabel
+    Left = 48
+    Height = 41
+    Top = 592
+    Width = 214
+    Caption = 'Tempo de Jogo'
+    Font.CharSet = ANSI_CHARSET
+    Font.Height = -30
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object lblTempo2: TLabel
+    Left = 48
+    Height = 41
+    Top = 24
+    Width = 242
+    Caption = 'Jogadas Humano'
+    Font.CharSet = ANSI_CHARSET
+    Font.Height = -30
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object lblJogadasHumano: TLabel
+    Left = 160
+    Height = 41
+    Top = 80
+    Width = 17
+    Caption = '0'
+    Font.CharSet = ANSI_CHARSET
+    Font.Height = -30
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object lblTempo3: TLabel
+    Left = 88
+    Height = 41
+    Top = 136
+    Width = 161
+    Caption = 'Jogadas I.A'
+    Font.CharSet = ANSI_CHARSET
+    Font.Height = -30
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object lblJogadasIa: TLabel
+    Left = 160
+    Height = 41
+    Top = 192
+    Width = 17
+    Caption = '0'
+    Font.CharSet = ANSI_CHARSET
+    Font.Height = -30
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
   object ImageList1: TImageList
     Height = 200
     Width = 200
-    Left = 86
-    Top = 601
+    Left = 904
+    Top = 32
     Bitmap = {
       4C7A03000000C8000000C8000000AF1D00000000000078DAED9D79989565D9C0
       FFE84A702B97F4ABCC322B33ADDC70CD4F71CBFC5C3E4DCD34CD2DCD85B45CEA
@@ -270,5 +355,10 @@ object frmJogoDaVelha: TfrmJogoDaVelha
       00C00F00FC00C00F00FC00C00F00C00F00FC00A8821F03062C2408A2435837FE
       1FC22B2896
     }
+  end
+  object Timer1: TTimer
+    OnTimer = Timer1Timer
+    Left = 816
+    Top = 40
   end
 end

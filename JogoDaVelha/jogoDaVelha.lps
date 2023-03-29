@@ -11,7 +11,7 @@
         <WindowIndex Value="-1"/>
         <TopLine Value="-1"/>
         <CursorPos X="-1" Y="-1"/>
-        <UsageCount Value="61"/>
+        <UsageCount Value="101"/>
       </Unit>
       <Unit>
         <Filename Value="ujogodavelha.pas"/>
@@ -21,133 +21,160 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="uJogoDaVelha"/>
         <IsVisibleTab Value="True"/>
-        <TopLine Value="138"/>
-        <CursorPos X="14" Y="150"/>
-        <UsageCount Value="61"/>
+        <TopLine Value="406"/>
+        <CursorPos X="57" Y="429"/>
+        <UsageCount Value="101"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="../../../../../lazarus/lcl/forms.pp"/>
+        <UnitName Value="Forms"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="1512"/>
+        <CursorPos X="14" Y="1524"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="../../../../../lazarus/lcl/lcltype.pp"/>
+        <UnitName Value="LCLType"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="775"/>
+        <CursorPos X="8" Y="799"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="../../../../../lazarus/lcl/controls.pp"/>
+        <UnitName Value="Controls"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="44"/>
+        <CursorPos X="3" Y="58"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="29">
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="251" Column="20" TopLine="231"/>
+        <Caret Line="374" Column="4" TopLine="361"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="137" Column="37" TopLine="128"/>
+        <Caret Line="375" Column="4" TopLine="362"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="141" TopLine="128"/>
+        <Caret Line="376" Column="4" TopLine="363"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="142" TopLine="128"/>
+        <Caret Line="73" Column="83" TopLine="49"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="144" TopLine="128"/>
+        <Caret Line="307" Column="24" TopLine="303"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="150" TopLine="130"/>
+        <Caret Line="322" TopLine="304"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="158" TopLine="147"/>
+        <Caret Line="319" Column="29" TopLine="305"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="155" Column="57" TopLine="147"/>
+        <Caret Line="317" Column="20" TopLine="303"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="140" TopLine="115"/>
+        <Caret Line="319" Column="49" TopLine="302"/>
+      </Position>
+      <Position>
+        <Filename Value="../../../../../lazarus/lcl/forms.pp"/>
+        <Caret Line="1524" Column="14" TopLine="1506"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="111" Column="45" TopLine="103"/>
+        <Caret Line="319" Column="51" TopLine="305"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="114" TopLine="97"/>
+        <Caret Line="9" Column="24"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="47" Column="14" TopLine="34"/>
+        <Caret Line="319" Column="57" TopLine="304"/>
+      </Position>
+      <Position>
+        <Filename Value="../../../../../lazarus/lcl/forms.pp"/>
+        <Caret Line="1879" Column="37" TopLine="1863"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="140" TopLine="131"/>
+        <Caret Line="320" Column="48" TopLine="305"/>
+      </Position>
+      <Position>
+        <Filename Value="../../../../../lazarus/lcl/forms.pp"/>
+        <Caret Line="1524" Column="14" TopLine="1512"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="141" TopLine="131"/>
+        <Caret Line="9" Column="33"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="142" TopLine="131"/>
+        <Caret Line="323" Column="4" TopLine="305"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="144" TopLine="138"/>
+        <Caret Line="321" Column="3" TopLine="312"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="150" TopLine="138"/>
+        <Caret Line="318" Column="71" TopLine="310"/>
+      </Position>
+      <Position>
+        <Filename Value="../../../../../lazarus/lcl/lcltype.pp"/>
+        <Caret Line="787" Column="35" TopLine="774"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="158" TopLine="147"/>
+        <Caret Line="321" Column="10" TopLine="310"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="159" TopLine="147"/>
+        <Caret Line="324" Column="11" TopLine="310"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="160" TopLine="147"/>
+        <Caret Line="321" Column="10" TopLine="310"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="162" TopLine="147"/>
+        <Caret Line="323" Column="9" TopLine="310"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="163" TopLine="147"/>
+        <Caret Line="324" Column="6" TopLine="310"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="171" TopLine="159"/>
+        <Caret Line="9" Column="36"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="140" TopLine="127"/>
+        <Caret Line="75" Column="77" TopLine="54"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="141" TopLine="127"/>
+        <Caret Line="99" Column="28" TopLine="86"/>
       </Position>
       <Position>
         <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="142" TopLine="127"/>
-      </Position>
-      <Position>
-        <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="171" Column="62" TopLine="158"/>
-      </Position>
-      <Position>
-        <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="141" Column="31" TopLine="127"/>
-      </Position>
-      <Position>
-        <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="109" Column="30" TopLine="98"/>
-      </Position>
-      <Position>
-        <Filename Value="ujogodavelha.pas"/>
-        <Caret Line="47" Column="14" TopLine="34"/>
+        <Caret Line="326" Column="17" TopLine="313"/>
       </Position>
     </JumpHistory>
     <RunParams>
@@ -156,35 +183,10 @@
     </RunParams>
   </ProjectSession>
   <Debugging>
-    <BreakPoints>
+    <Watches>
       <Item>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="ujogodavelha.pas"/>
-        <Line Value="114"/>
+        <Expression Value="locaisValidos"/>
       </Item>
-      <Item>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="ujogodavelha.pas"/>
-        <Line Value="167"/>
-      </Item>
-      <Item>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="ujogodavelha.pas"/>
-        <Line Value="173"/>
-      </Item>
-      <Item>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="ujogodavelha.pas"/>
-        <Line Value="154"/>
-      </Item>
-    </BreakPoints>
+    </Watches>
   </Debugging>
 </CONFIG>
