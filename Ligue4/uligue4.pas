@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, ExtCtrls,
-  StdCtrls, Types, math;
+  StdCtrls, Types, math, LCLType;
 
 
 const MAX_LINHA = 5;
@@ -20,7 +20,7 @@ var
  cont : Integer;
 
 type
-  TEstado = (eMovimento, eAvaliar, eEsperar, eAtualizar, eAvaliaMovimento);
+  TEstado = (eMovimento, eAvaliar, eEsperar);
 type
   TTabuleiro = Array[0..MAX_LINHA,0..MAX_COLUNA] of Integer;
   PWidthArray = ^TTabuleiro;
@@ -43,14 +43,11 @@ TMethodPtr = procedure of object;
   function linhaAbertaTabuleiro(tabuleiro: TTabuleiro; coluna:Integer) : Integer;
   function localValido(tabuleiro: TTabuleiro; coluna : Integer) : Boolean;
   function poePca(tabuleiro : TTabuleiro; linha, coluna, peca: Integer) : TTabuleiro;
-  function minhaCopia(linha: TLinha; inicio, tamanho : Integer) : TLinha;
+  function copiaJanela(linha: TLinha; inicio, tamanho : Integer) : TLinha;
   function movimentoVencedor(tabuleiro: TTabuleiro; peca: Integer ): Boolean;
   function determinaLocalValidos(tabuleiro : TTabuleiro) :TLinha;
   function finaliza_jogo(tabuleiro : TTabuleiro): Boolean;
   function copiaTabuleiro(origem : TTabuleiro) :TTabuleiro;
-  procedure logJanela(name : String;i : integer);
-  procedure logFile(fileName, text :String);
-  procedure logMinimax();
 
   type
   { TPlayer2 }
@@ -59,13 +56,13 @@ TMethodPtr = procedure of object;
   private
     FAtualizaTela: TMethodPtr;
     FEstado: TEstado;
+    FreiniciaJogo: TMethodPtr;
     FRun: boolean;
     FTabuleiro: PWidthArray;
     FtotalJogadasPC: PInteger;
     procedure Execute; override;
     function minimax(tabuleiro : TTabuleiro;profundidade, alpha, beta:Integer; MaxJogador : Boolean) : TMinMax;
-    procedure teste;
-
+    function determinaFimdeJogo: Boolean;
     function pontuaPosicao(tab: TTabuleiro; peca: Integer) : Integer;
     function avaliaJanela(janela : TLinha; peca : Integer) : Integer;
   protected
@@ -79,6 +76,7 @@ TMethodPtr = procedure of object;
     property tabuleiro : PWidthArray read FTabuleiro write FTabuleiro;
     property totalJogadasPC : PInteger read FtotalJogadasPC write FtotalJogadasPC;
     property atualizaTela: TMethodPtr read FAtualizaTela write FAtualizaTela;
+    property reiniciaJogo: TMethodPtr read FreiniciaJogo write FreiniciaJogo;
   end;
 
   type
@@ -107,7 +105,7 @@ TMethodPtr = procedure of object;
 
     procedure atualizaTabuleiroVisual;
 
-
+    procedure reiniciaJogo;
     function localValido(Coluna, corPeca: Integer): Boolean;
     procedure Timer1Timer(Sender: TObject);
 
@@ -222,7 +220,7 @@ begin
   Result := tabuleiro ;
 end;
 
-function minhaCopia(linha: TLinha; inicio, tamanho: Integer): TLinha;
+function copiaJanela(linha: TLinha; inicio, tamanho: Integer): TLinha;
 var i, j : Integer;
 begin
   SetLength(Result, 0);
@@ -234,6 +232,7 @@ begin
     inc(j)
    end;
 end;
+
 
 function movimentoVencedor(tabuleiro: TTabuleiro; peca: Integer): Boolean;
 var
@@ -314,59 +313,6 @@ begin
    end;
 end;
 
-procedure logJanela(name: String; i : integer);
-var
-  logFile: TextFile;
-  s : String;
-begin
-    AssignFile(logFile, 'log_score.txt');
-  if FileExists('log_score.txt') then
-      Append(logFile)
-    else
-      Rewrite(logFile);
-
-    write(logFile, name + ' ');
-
-     Write(logFile, inttoStr(i) + ' ');
-
-    Writeln(logFile);
-
-    CloseFile(logFile);
-end;
-
-procedure logFile(fileName, text: String);
-var
-  logFile: TextFile;
-  s : String;
-begin
-    AssignFile(logFile, filename);
-  if FileExists(filename) then
-      Append(logFile)
-    else
-      Rewrite(logFile);
-
-     writeln(logFile, text);
-
-    CloseFile(logFile);
-end;
-
-procedure logMinimax();
-var
-  logFile: TextFile;
-  s : String;
-begin
-    AssignFile(logFile, 'log_minimax.txt');
-  if FileExists('log_minimax.txt') then
-      Append(logFile)
-    else
-      Rewrite(logFile);
-
-     writeln(logFile, 'minimax');
-
-    CloseFile(logFile);
-end;
-
-
 {$R *.lfm}
 
 { TPlayer2 }
@@ -375,11 +321,9 @@ procedure TPlayer2.Execute;
 var
   valor, linha : Integer;
   minMaxResult : TMinMax;
-
 begin
   While Frun do
   begin
-
    case Festado of
     eAvaliar:
      begin
@@ -395,29 +339,16 @@ begin
         if localValido(FTabuleiro^, minMaxResult.coluna) then
           FTabuleiro^ := poePca(FTabuleiro^,linha,  minMaxResult.coluna, PECA_AMARELA);
         Inc(FtotalJogadasPC^);
-        FEstado:= eAtualizar;
        end;
-     end;
-    eAtualizar:
-     begin
        Synchronize(atualizaTela);
-       FEstado:= eAvaliaMovimento;
-     end;
-    eAvaliaMovimento:
-     begin
-      if movimentoVencedor(tabuleiro^,PECA_AMARELA) then
-         Synchronize(@teste);
-      FEstado:= eEsperar;
+       determinaFimdeJogo;
+       FEstado:= eEsperar;
      end;
     eEsperar:
       begin
        Sleep(200);
-       if tabuleiro^[0,0]= LongInt(2) then
-         begin
-//            Synchronize(@teste);
-         end;
       end;
-   end;
+  end;
   end;
 end;
 
@@ -432,7 +363,6 @@ var
  novaPontuacao : Integer;
  finalizado : boolean;
 begin
-  logFile('minimax_log', 'depth ' + intToStr(profundidade) + ' alpha ' + intToStr(alpha) + ' beta ' + intToStr(beta) + ' maximizing_player ' + BoolToStr(MaxJogador));
   Result.coluna:= 0;
   Result.pontuacao:= 0;
   locaisValidos := determinaLocalValidos(tabuleiro);
@@ -472,7 +402,6 @@ begin
      value  := -MaxInt;
      Randomize;
      coluna := Random(High(locaisValidos));
-
      for j in locaisValidos do
       begin
        linha := linhaAbertaTabuleiro(tabuleiro,j);
@@ -483,7 +412,6 @@ begin
          begin
             value := novaPontuacao;
             coluna:= j;
-
          end;
        alpha := Max(novaPontuacao, alpha);
        if alpha >= beta then
@@ -509,7 +437,6 @@ begin
            begin
             value := novaPontuacao;
             coluna:= j;
-
            end;
          beta := min(novaPontuacao, beta);
          if alpha >= beta then
@@ -517,16 +444,43 @@ begin
           break;
          end;
         end;
-          Result.coluna:= coluna;
-            Result.pontuacao := round(value);
+        Result.coluna:= coluna;
+        Result.pontuacao := round(value);
         exit(Result);
      end;
 end;
 
-procedure TPlayer2.teste;
+function TPlayer2.determinaFimdeJogo: Boolean;
+var
+Resultado: Integer;
+msg:String;
+locaisValidos : TLinha;
 begin
-  showmessage('é o que vc esperava');
+  locaisValidos := determinaLocalValidos(FTabuleiro^);
+  msg := EmptyStr;
+  if movimentoVencedor(FTabuleiro^, PECA_VERMELHA) then
+    msg := 'Você Venceu, Deseja Jogar Novamente?'
+  else if movimentoVencedor(FTabuleiro^, PECA_AMARELA) then
+    msg := 'computador Venceu, Deseja Jogar Novamente?'
+  else if Length(locaisValidos) = 0 then
+    msg :='Empate, Deseja Jogar Novamente?';
+
+  if msg = EmptyStr then
+     Exit(False);
+
+  Resultado := Application.MessageBox(Pchar(msg),'Fim de Jogo', MB_YESNO + MB_ICONEXCLAMATION);
+  case Resultado of
+    mryes: // usuário clicou Sim
+     begin
+       reiniciaJogo;
+     end;
+    mrNo:
+     begin
+      Application.Terminate;
+     end;
+  end;
 end;
+
 
 function determinaLocalValidos(tabuleiro: TTabuleiro): TLinha;
 var
@@ -565,7 +519,7 @@ begin
     linhaAux := pegalinha(tab,i);
     for j:= 0 to MAX_COLUNA - 3 do
      begin
-       janela := minhaCopia(linhaAux, j, TAMANHO_JANELA);
+       janela := copiaJanela(linhaAux, j, TAMANHO_JANELA);
        pontuacao := pontuacao + avaliaJanela(janela, peca);
      end;
    end;
@@ -576,7 +530,7 @@ begin
     colunaAux := pegaColuna(tab, j);
     for i:= 0 to MAX_LINHA - 3 do
      begin
-      janela := minhaCopia(colunaAux,i,TAMANHO_JANELA);
+      janela := copiaJanela(colunaAux,i,TAMANHO_JANELA);
       pontuacao := pontuacao + avaliaJanela(janela, peca);
      end;
    end;
@@ -622,7 +576,6 @@ begin
 
    if (contaValores(janela, pecaSW) = 3) and (contaValores(janela, CASA_VAZIA) = 1) then
     Dec(Result,4);
-   //logJanela(janela);
 end;
 
 constructor TPlayer2.Create;
@@ -685,6 +638,7 @@ begin
    Player2.tabuleiro := @tabuleiro;
    Player2.atualizaTela:= @atualizaTabuleiroVisual;
    Player2.totalJogadasPC := @totalJogadasPC;
+   Player2.reiniciaJogo := @reiniciaJogo;
    Player2.Start;
 
    hora := 0;
@@ -715,6 +669,9 @@ procedure TfrmLigue4.PaintBox1MouseUp(Sender: TObject; Button: TMouseButton;
 var
  index : Integer;
 begin
+ if Player2.estado <> eEsperar then
+  Exit;
+
   if X < 100 then
    begin
     index  := 0;
@@ -747,10 +704,8 @@ begin
   if localValido(index,PECA_VERMELHA) then
    begin
      atualizaTabuleiroVisual;
-     if not movimentoVencedor(tabuleiro, PECA_VERMELHA) then
+     if not Player2.determinaFimdeJogo then
           Player2.estado:= eAvaliar
-     else
-       Showmessage('venceu a maquina');
    end;
 end;
 
@@ -760,6 +715,30 @@ begin
  DrawGrid1.EndUpdate;
  lblNJogadasHumano.Caption:= IntToStr(totalJogadasHumano);
  lblNJogadasIA.Caption:= IntToStr(totalJogadasPC);
+end;
+
+procedure TfrmLigue4.reiniciaJogo;
+var
+  i, j : Integer;
+begin
+ for i := 0 to MAX_LINHA do
+  begin
+   for j := 0 to MAX_COLUNA do
+    begin
+     tabuleiro[i,j] := CASA_VAZIA;
+    end;
+  end;
+  atualizaTabuleiroVisual;
+  Timer1.Enabled := False;
+  segundo := 0;
+  minuto := 0;
+  hora := 0;
+  lblTempo.Caption := Format('%2.2d',[Hora]) + ':' + Format('%2.2d',[Minuto]) + ':' + Format('%2.2d',[Segundo]);
+  totalJogadasHumano := 0;
+  totalJogadasPC := 0;
+  lblNJogadasIa.Caption := IntToStr(totalJogadasPC);
+  lblNJogadasHumano.Caption:=IntToStr(totalJogadasHumano);
+  Timer1.Enabled := True;
 end;
 
 function TfrmLigue4.localValido(Coluna, corPeca: Integer): Boolean;
