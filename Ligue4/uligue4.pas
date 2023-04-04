@@ -16,6 +16,8 @@ const TAMANHO_JANELA = 4;
 const PECA_VERMELHA = 2;
 const PECA_AMARELA = 1;
 
+var
+ cont : Integer;
 
 type
   TEstado = (eMovimento, eAvaliar, eEsperar, eAtualizar, eAvaliaMovimento);
@@ -23,6 +25,7 @@ type
   TTabuleiro = Array[0..MAX_LINHA,0..MAX_COLUNA] of Integer;
   PWidthArray = ^TTabuleiro;
   TLinha = Array of Integer;
+
 type TMinMax = record
    coluna : Integer;
    pontuacao: Integer;
@@ -42,6 +45,12 @@ TMethodPtr = procedure of object;
   function poePca(tabuleiro : TTabuleiro; linha, coluna, peca: Integer) : TTabuleiro;
   function minhaCopia(linha: TLinha; inicio, tamanho : Integer) : TLinha;
   function movimentoVencedor(tabuleiro: TTabuleiro; peca: Integer ): Boolean;
+  function determinaLocalValidos(tabuleiro : TTabuleiro) :TLinha;
+  function finaliza_jogo(tabuleiro : TTabuleiro): Boolean;
+  function copiaTabuleiro(origem : TTabuleiro) :TTabuleiro;
+  procedure logJanela(name : String;i : integer);
+  procedure logFile(fileName, text :String);
+  procedure logMinimax();
 
   type
   { TPlayer2 }
@@ -54,9 +63,9 @@ TMethodPtr = procedure of object;
     FTabuleiro: PWidthArray;
     FtotalJogadasPC: PInteger;
     procedure Execute; override;
-    function minimax(tabuleiro : TTabuleiro;profundidade, alpha, beta:Single; MaxJogador : Boolean) : TMinMax;
+    function minimax(tabuleiro : TTabuleiro;profundidade, alpha, beta:Integer; MaxJogador : Boolean) : TMinMax;
     procedure teste;
-    function determinaLocalValidos(tabuleiro : TTabuleiro) :TLinha;
+
     function pontuaPosicao(tab: TTabuleiro; peca: Integer) : Integer;
     function avaliaJanela(janela : TLinha; peca : Integer) : Integer;
   protected
@@ -119,13 +128,13 @@ implementation
 
 function pegalinha(tabuleiro: TTabuleiro; linha: Integer): TLinha;
 var
-  i : Integer;
+  j : Integer;
 begin
   SetLength(Result, 0);
   SetLength(Result, MAX_COLUNA + 1);
-  for i := 0 to MAX_COLUNA do
+  for j := 0 to MAX_COLUNA do
   begin
-    Result[i] := tabuleiro[linha, i];
+    Result[j] := tabuleiro[linha, j];
   end;
 end;
 
@@ -185,6 +194,7 @@ function linhaAbertaTabuleiro(tabuleiro: TTabuleiro; coluna: Integer): Integer;
 var
   i : Integer;
 begin
+ Result := -1;
   for i := MAX_LINHA downto 0  do
    begin
     if tabuleiro[i,coluna] = 0 then
@@ -193,6 +203,8 @@ begin
       break;
      end;
    end;
+  if Result < 0 then
+   Result := -1;
 end;
 
 function localValido(tabuleiro: TTabuleiro; coluna: Integer
@@ -204,7 +216,9 @@ end;
 function poePca(tabuleiro: TTabuleiro; linha, coluna, peca: Integer
   ): TTabuleiro;
 begin
-  tabuleiro[linha, coluna] := peca;
+  if tabuleiro[linha, coluna] = CASA_VAZIA then
+    tabuleiro[linha, coluna] := peca;
+
   Result := tabuleiro ;
 end;
 
@@ -214,9 +228,9 @@ begin
   SetLength(Result, 0);
   SetLength(Result, tamanho);
   j := 0;
-  for i := inicio to (inicio + 4) - 1  do
+  for i := 0 to 3  do
    begin
-    Result[j] := linha[i];
+    Result[j] := linha[inicio + i];
     inc(j)
    end;
 end;
@@ -281,6 +295,78 @@ begin
 end;
 
 
+function finaliza_jogo(tabuleiro: TTabuleiro): Boolean;
+var locaisValidos : TLinha;
+begin
+  locaisValidos := determinaLocalValidos(tabuleiro);
+  Result := movimentoVencedor(tabuleiro, PECA_VERMELHA) or movimentoVencedor(tabuleiro, PECA_AMARELA) or (Length(locaisValidos) = 0);
+end;
+
+function copiaTabuleiro(origem: TTabuleiro): TTabuleiro;
+var i,j : Integer;
+begin
+  for i := 0 to MAX_LINHA do
+   begin
+     for j := 0 to MAX_COLUNA do
+      begin
+         Result[i,j] := origem[i,j];
+      end;
+   end;
+end;
+
+procedure logJanela(name: String; i : integer);
+var
+  logFile: TextFile;
+  s : String;
+begin
+    AssignFile(logFile, 'log_score.txt');
+  if FileExists('log_score.txt') then
+      Append(logFile)
+    else
+      Rewrite(logFile);
+
+    write(logFile, name + ' ');
+
+     Write(logFile, inttoStr(i) + ' ');
+
+    Writeln(logFile);
+
+    CloseFile(logFile);
+end;
+
+procedure logFile(fileName, text: String);
+var
+  logFile: TextFile;
+  s : String;
+begin
+    AssignFile(logFile, filename);
+  if FileExists(filename) then
+      Append(logFile)
+    else
+      Rewrite(logFile);
+
+     writeln(logFile, text);
+
+    CloseFile(logFile);
+end;
+
+procedure logMinimax();
+var
+  logFile: TextFile;
+  s : String;
+begin
+    AssignFile(logFile, 'log_minimax.txt');
+  if FileExists('log_minimax.txt') then
+      Append(logFile)
+    else
+      Rewrite(logFile);
+
+     writeln(logFile, 'minimax');
+
+    CloseFile(logFile);
+end;
+
+
 {$R *.lfm}
 
 { TPlayer2 }
@@ -297,7 +383,7 @@ begin
    case Festado of
     eAvaliar:
      begin
-       minMaxResult := minimax(FTabuleiro^,5, -Infinity, Infinity, True);
+       minMaxResult := minimax(FTabuleiro^,5, -MaxInt, MaxInt, True);
        valor := minMaxResult.pontuacao;
        FEstado := eMovimento;
      end;
@@ -336,72 +422,105 @@ begin
 end;
 
 function TPlayer2.minimax(tabuleiro: TTabuleiro; profundidade, alpha,
-  beta: Single; MaxJogador: Boolean): TMinMax;
+  beta: Integer; MaxJogador: Boolean): TMinMax;
 var
-  val : Single;
-  aux,tmp, coluna, linha, col, novaPontuacao : Integer;
-  x : String;
-  i : Integer;
-  tabCopia : TTabuleiro;
-  locaisValidos : TLinha;
+ locaisValidos : TLinha;
+ value : Integer;
+ coluna, linha: Integer;
+ j : integer;
+ tabCopia : TTabuleiro;
+ novaPontuacao : Integer;
+ finalizado : boolean;
 begin
+  logFile('minimax_log', 'depth ' + intToStr(profundidade) + ' alpha ' + intToStr(alpha) + ' beta ' + intToStr(beta) + ' maximizing_player ' + BoolToStr(MaxJogador));
+  Result.coluna:= 0;
+  Result.pontuacao:= 0;
   locaisValidos := determinaLocalValidos(tabuleiro);
-  if profundidade = 0 then
-   begin
-     Result.pontuacao := pontuaPosicao(tabuleiro, PECA_AMARELA);
-     Result.coluna:= -1;
-     exit;
-   end;
-  if MaxJogador then
-   begin
-     val := -Infinity;
-     Randomize;
-     aux := Random(Length(locaisValidos));
-     coluna := locaisValidos[aux];
-     for i:= 0 to Length(LocaisValidos) - 1 do
-      begin
-         col := locaisValidos[i];
-         linha := linhaAbertaTabuleiro(tabuleiro, col);
-         tabCopia := tabuleiro;
-         tabCopia := poePca(tabCopia,linha, col, PECA_AMARELA);
-         novaPontuacao:= minimax(tabCopia, profundidade - 1, alpha, beta, False).pontuacao;
-         if novaPontuacao > val then
-          begin
-            val := novaPontuacao;
-            coluna := col;
-          end;
-         alpha := max(val, Alpha);
-         if alpha >= beta then
-          break;
-      end;
-      Result.pontuacao := round(val);
-      Result.coluna:= coluna;
-   end
-  else
-   begin
-    val := Infinity;
-    Randomize;
-    aux := Random(Length(locaisValidos));
-    coluna := locaisValidos[aux];
-    for i:= 0 to Length(LocaisValidos) - 1 do
-     begin
-      col := locaisValidos[i];
-      linha := linhaAbertaTabuleiro(tabuleiro, col);
-      tabCopia := tabuleiro;
-      tabCopia := poePca(tabCopia,linha, col, PECA_VERMELHA);
-      novaPontuacao:= minimax(tabCopia,profundidade - 1, alpha, beta, True).pontuacao;
-      if novaPontuacao < val then
+  finalizado := finaliza_jogo(tabuleiro);
+
+  if (profundidade = 0) or (finalizado) then
+    begin
+     if finalizado then
        begin
-        val := novaPontuacao;
-        coluna := col;
+         if movimentoVencedor(tabuleiro, PECA_AMARELA) then
+           begin
+            Result.coluna:=-1;
+            Result.pontuacao:=10000000;
+            Exit(Result);
+           end else
+          if movimentoVencedor(tabuleiro, PECA_VERMELHA) then
+            begin
+             Result.coluna:=-1;
+             Result.pontuacao:=-10000000;
+             Exit(Result);
+            end
+          else
+           begin
+             Result.coluna:=-1;
+             Result.pontuacao:=0;
+             Exit(Result);
+           end;
+         end else
+         begin
+          Result.pontuacao := pontuaPosicao(tabuleiro, PECA_AMARELA);
+          exit(Result);
+          end;
+        end;
+
+  if MaxJogador then
+    begin
+     value  := -MaxInt;
+     Randomize;
+     coluna := Random(High(locaisValidos));
+
+     for j in locaisValidos do
+      begin
+       linha := linhaAbertaTabuleiro(tabuleiro,j);
+       tabCopia := copiaTabuleiro(tabuleiro);
+       tabCopia := poePca(tabCopia,linha, j, PECA_AMARELA);
+       novaPontuacao:= minimax(tabCopia,profundidade -1, alpha,beta, False).pontuacao;
+       if novaPontuacao > value then
+         begin
+            value := novaPontuacao;
+            coluna:= j;
+
+         end;
+       alpha := Max(novaPontuacao, alpha);
+       if alpha >= beta then
+       begin
+        break;
        end;
-      beta := min(val, Beta);
-      if alpha >= beta then
-       break;
+      end;
+     Result.coluna:= coluna;
+     Result.pontuacao := value;
+     exit(Result);
+    end
+    else
+     begin
+       value := MaxInt;
+       coluna := Random(High(locaisValidos));
+       for j in locaisValidos do
+        begin
+         linha := linhaAbertaTabuleiro(tabuleiro, j);
+         tabCopia := copiaTabuleiro(tabuleiro);
+         tabCopia := poePca(tabCopia,linha,j,PECA_VERMELHA);
+         novaPontuacao := minimax(tabCopia, profundidade -1, alpha, beta, True).pontuacao;
+         if novaPontuacao < value then
+           begin
+            value := novaPontuacao;
+            coluna:= j;
+
+           end;
+         beta := min(novaPontuacao, beta);
+         if alpha >= beta then
+         begin
+          break;
+         end;
+        end;
+          Result.coluna:= coluna;
+            Result.pontuacao := round(value);
+        exit(Result);
      end;
-    Result.pontuacao := round(val);
-    Result.coluna:= coluna;
-   end;
 end;
 
 procedure TPlayer2.teste;
@@ -409,7 +528,7 @@ begin
   showmessage('é o que vc esperava');
 end;
 
-function TPlayer2.determinaLocalValidos(tabuleiro: TTabuleiro): TLinha;
+function determinaLocalValidos(tabuleiro: TTabuleiro): TLinha;
 var
   j,i : Integer;
 begin
@@ -417,33 +536,31 @@ begin
   SetLength(Result, i);
   for j := 0 to MAX_COLUNA do
    begin
-    if tabuleiro[0, j] = 0 then
+    if tabuleiro[0, j] = CASA_VAZIA then
      begin
       SetLength(Result, i + 1);
       Result[i] := j;
       Inc(i);
      end;
    end;
-
-
 end;
 
 function TPlayer2.pontuaPosicao(tab: TTabuleiro; peca: Integer): Integer;
 var
  pontuacao, cont_peca : Integer;
  colunaDoMeio, colunaAux, linhaAux, janela : TLinha;
- i,j : Integer;
-
+ i,j,k,l,m : Integer;
+ linha : Array[0..6] of Integer;
+ score : Array[0..1] of Integer;
 begin
- pontuacao := 0;
- cont_peca := 0;
+  pontuacao := 0;
+  cont_peca := 0;
 
   colunaDoMeio := pegaColuna(tab, MAX_COLUNA div 2);
   cont_peca := contaValores(colunaDoMeio, peca);
-  pontuacao:= pontuacao + cont_peca * 6;
-
+  pontuacao:= cont_peca * 6;
   //Pontuacao na horizontal
-  for i := 0 to MAX_LINHA do
+   for i := 0 to MAX_LINHA do
    begin
     linhaAux := pegalinha(tab,i);
     for j:= 0 to MAX_COLUNA - 3 do
@@ -482,6 +599,7 @@ begin
       pontuacao := pontuacao + avaliaJanela(janela, peca);
      end;
    end;
+
   Result := pontuacao;
 end;
 
@@ -490,10 +608,10 @@ var
  pecaSW : Integer;
 begin
   Result := 0;
-  pecaSW := PECA_VERMELHA;
+  pecaSW := PECA_AMARELA;
 
-  if peca = PECA_VERMELHA then
-   pecaSW:= PECA_AMARELA;
+  if peca = PECA_AMARELA then
+   pecaSW:= PECA_VERMELHA;
 
    if contaValores(janela, peca) = 4 then
     Inc(Result,100)
@@ -504,6 +622,7 @@ begin
 
    if (contaValores(janela, pecaSW) = 3) and (contaValores(janela, CASA_VAZIA) = 1) then
     Dec(Result,4);
+   //logJanela(janela);
 end;
 
 constructor TPlayer2.Create;
@@ -571,6 +690,7 @@ begin
    hora := 0;
    minuto := 0;
    segundo := 0;
+   cont := 0;
 end;
 
 

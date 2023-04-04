@@ -1,7 +1,7 @@
 object frmLigue4: TfrmLigue4
-  Left = 3331
+  Left = 904
   Height = 779
-  Top = 260
+  Top = 139
   Width = 1006
   Caption = 'Ligue 4'
   ClientHeight = 779
